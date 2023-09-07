@@ -11,6 +11,7 @@ PLATFORM_HEIGHT = 20
 PLATFORM_SPEED = 1
 
 # Флаги состояния игры.
+boll_direction = False      # True - движения вверх, False - движения вниз.
 platform_moving_left = False
 platform_moving_right = False
 
@@ -19,7 +20,9 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 screen_rect = screen.get_rect()
 
 # Создание объектов Rect для представления мяча и платформы.
+# Перемещения мяча в центр экрана, а платформы в середину нижней границы.
 boll = pygame.Rect(0, 0, BOLL_SIZE, BOLL_SIZE)
+boll.center = screen_rect.center
 platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
 platform.midbottom = screen_rect.midbottom
 
@@ -31,7 +34,7 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-            
+
         # Обработка нажатых клавиш клавиатуры.
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RIGHT:
@@ -47,10 +50,21 @@ while True:
                 platform_moving_left = False
 
     # Движения платформы (направо x увеличивается, налево - уменьшается).
-    if platform_moving_right:
+    if platform_moving_right and platform.x < SCREEN_WIDTH - PLATFORM_WIDTH:
         platform.x += PLATFORM_SPEED
-    if platform_moving_left:
+    if platform_moving_left and platform.x > 0:
         platform.x -= PLATFORM_SPEED
+
+    # Движения мяча (вниз - y увеличиваеся, вверх - уменьшается).
+    if not boll_direction and boll.y < SCREEN_HEIGHT - BOLL_SIZE:
+        boll.y += 1
+    elif boll_direction and boll.y > 0:
+        boll.y -= 1
+
+    # Если мяч столкнулся с платформой или с верхней границев, 
+    # То происходит смена движения мяча.
+    if boll.colliderect(platform) or boll.y <= 0:
+        boll_direction = not boll_direction
 
     # Заливка экрана черным цветом, квадратов мяча и платформы белым.
     screen.fill((0, 0, 0), screen_rect)
