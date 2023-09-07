@@ -3,15 +3,17 @@ import pygame, sys
 pygame.init()
 
 # Константы.
-SCREEN_WIDTH = 600
+SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-BOLL_SIZE = 40
+BALL_SIZE = 40
+BALL_SPEED = 0.3
 PLATFORM_WIDTH = 150
 PLATFORM_HEIGHT = 20
 PLATFORM_SPEED = 1
 
 # Флаги состояния игры.
-boll_direction = False      # True - движения вверх, False - движения вниз.
+ball_vertical = True      # True - движения вниз, False - движения вверх.
+ball_horizontal = True    # True - движение вправо, False - движения влево.
 platform_moving_left = False
 platform_moving_right = False
 
@@ -21,8 +23,11 @@ screen_rect = screen.get_rect()
 
 # Создание объектов Rect для представления мяча и платформы.
 # Перемещения мяча в центр экрана, а платформы в середину нижней границы.
-boll = pygame.Rect(0, 0, BOLL_SIZE, BOLL_SIZE)
-boll.center = screen_rect.center
+ball = pygame.Rect(0, 0, BALL_SIZE, BALL_SIZE)
+ball.center = screen_rect.center
+ball_float_x = float(ball.x)
+ball_float_y = float(ball.y)
+
 platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
 platform.midbottom = screen_rect.midbottom
 
@@ -55,20 +60,46 @@ while True:
     if platform_moving_left and platform.x > 0:
         platform.x -= PLATFORM_SPEED
 
-    # Движения мяча (вниз - y увеличиваеся, вверх - уменьшается).
-    if not boll_direction and boll.y < SCREEN_HEIGHT - BOLL_SIZE:
-        boll.y += 1
-    elif boll_direction and boll.y > 0:
-        boll.y -= 1
+    # Обработка отскока от стен (столкновение == изменение направления полета).
+    if ball.y <= 0:
+        ball_vertical = not ball_vertical
+    if ball.x <= 0:
+        ball_horizontal = not ball_horizontal
+    if ball.right >= screen_rect.right:
+        ball_horizontal = not ball_horizontal
+    if ball.bottom >= screen_rect.bottom:
+        ball_float_x, ball_float_y = screen_rect.center
+
+    # Движения мяча - сначала изменяем дробные значения координат
+    # После - координаты основного прямоугольника.
+    # Движение наискос в правый нижний угол.
+    if ball_vertical and ball_horizontal:
+        ball_float_y += BALL_SPEED
+        ball_float_x += BALL_SPEED
+    # Движение наискос в правый верхний угол.
+    elif not ball_vertical and ball_horizontal:
+        ball_float_y -= BALL_SPEED
+        ball_float_x += BALL_SPEED
+    # Движение наискос в левый нижний угол.
+    elif ball_vertical and not ball_horizontal:
+        ball_float_y += BALL_SPEED
+        ball_float_x -= BALL_SPEED
+    # Движение наискос в левый верхний угол.
+    else:
+        ball_float_y -= BALL_SPEED
+        ball_float_x -= BALL_SPEED
+
+    ball.y = ball_float_y
+    ball.x = ball_float_x
 
     # Если мяч столкнулся с платформой или с верхней границев, 
     # То происходит смена движения мяча.
-    if boll.colliderect(platform) or boll.y <= 0:
-        boll_direction = not boll_direction
+    if ball.colliderect(platform):
+        ball_vertical = not ball_vertical
 
     # Заливка экрана черным цветом, квадратов мяча и платформы белым.
     screen.fill((0, 0, 0), screen_rect)
-    screen.fill((255, 255, 255), boll)
+    screen.fill((255, 255, 255), ball)
     screen.fill((255, 255, 255), platform)
 
     # Обновление экрана после каждого прохода цикла.
