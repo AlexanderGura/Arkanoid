@@ -7,53 +7,6 @@ from scoreboard import *
 
 pygame.init()
 
-# Создание экрана и получение поверхности и квадрата окна.
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-screen_rect = screen.get_rect()
-
-# Создание кнопок Play, Quit.
-font = pygame.font.SysFont(None, 72)
-play_button_image = font.render("Play", True, (255, 255, 255), (0, 255, 0))
-play_button_rect = play_button_image.get_rect()
-play_button_rect.center = screen_rect.center
-
-quit_button_image = font.render("Quit", True, (255, 255, 255), (255, 0, 0))
-quit_button_rect = play_button_image.get_rect()
-quit_button_rect.x = play_button_rect.x
-quit_button_rect.y = play_button_rect.y + BUTTON_HEIGHT * 2
-
-ball = Ball(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-
-platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
-platform.midbottom = screen_rect.midbottom
-
-
-# Создание группы блоков, определение пространства для одного блока(по x, по y).
-blocks = pygame.sprite.Group()
-space_block_x = BLOCK_WIDTH + BLOCK_INDENT
-space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
-
-# Подстчёт доступного количества блоков в строке и столбце.
-available_block_x = (SCREEN_WIDTH - BALL_SIZE) // space_block_x
-available_block_y = (SCREEN_HEIGHT // 2) // space_block_y
-
-hit_sound = pygame.mixer.Sound('sounds/hit_block.wav')
-ball_bounce_sound = pygame.mixer.Sound('sounds/ball_bounce.wav')
-select_sound = pygame.mixer.Sound('sounds/select.wav')
-
-score_board = ScoreBoard()
-
-# Заполнение строки блоками.
-for block_row in range(available_block_y):
-    for block_number in range(available_block_x):
-        block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
-
-        # Позиция блока - отступ (BALL_SIZE // 2) + 
-        # + пространство для него умноженное на номер в строке.
-        block.rect.x = BLOCK_INDENT + space_block_x * block_number
-        block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
-        blocks.add(block)
-
 def check_event(event):
     global platform_moving_left, platform_moving_right, game_active
 
@@ -90,6 +43,26 @@ def check_event(event):
             pygame.quit()
             sys.exit()
 
+def create_blocks():
+    '''Функция отвечает за построение сетки блоков.'''
+    space_block_x = BLOCK_WIDTH + BLOCK_INDENT
+    space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
+
+    # Подстчёт доступного количества блоков в строке и столбце.
+    available_block_x = (SCREEN_WIDTH - BALL_SIZE) // space_block_x
+    available_block_y = (SCREEN_HEIGHT // 2) // space_block_y
+
+    # Заполнение строки блоками.
+    for block_row in range(available_block_y):
+        for block_number in range(available_block_x):
+            block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
+
+            # Позиция блока - отступ (BALL_SIZE // 2) + 
+            # + пространство для него умноженное на номер в строке.
+            block.rect.x = BLOCK_INDENT + space_block_x * block_number
+            block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
+            blocks.add(block)
+
 def platform_movement():
     # Движения платформы (направо x увеличивается, налево - уменьшается).
     if platform_moving_right and platform.x < SCREEN_WIDTH - PLATFORM_WIDTH:
@@ -98,7 +71,7 @@ def platform_movement():
         platform.x -= PLATFORM_SPEED
 
 def ball_bounce():
-    global ball_vertical, ball_horizontal
+    global ball_vertical, ball_horizontal, game_active
 
     # Обработка отскока от стен (столкновение == изменение направления полета).
     if ball.rect.y <= 0:
@@ -112,7 +85,8 @@ def ball_bounce():
         ball_bounce_sound.play()
     if ball.rect.bottom >= screen_rect.bottom:
         ball.float_x, ball.float_y = screen_rect.center
-        ball_bounce_sound.play()
+        ball_fall_sound.play()
+        game_active = score_board.lose_heart()
 
 def ball_movement():
     global ball_vertical, ball_horizontal, ball_float_y, ball_float_x
@@ -150,12 +124,22 @@ def check_ball_platfrom_collide():
 
 def check_ball_blocks_collide():
     global ball_vertical
-    # Проверка на коллизию между мячом и блоками.
+    # Проверка на коллизию между мячом и блоками, если они не закончились.
     # Функция возвращает список спрайтов, с которыми столкнулся мяч.
     # Флаг True означает уничтожение блока, после соприкосновения.
-    if pygame.sprite.spritecollide(ball, blocks, True):
-        ball_vertical = not ball_vertical
-        hit_sound.play()
+    if blocks:
+        if pygame.sprite.spritecollide(ball, blocks, True):
+            ball_vertical = not ball_vertical
+            hit_sound.play()
+            score_board.update_score()
+    else:
+        score_board.update_level()
+        start_new_level()
+
+def start_new_level():
+    '''Функция используется, когда игрок перешел на новый уровень.'''
+    create_blocks()
+    ball.center = screen_rect.center
 
 def update_screen():
     # Заливка экрана черным цветом, квадратов мяча и платформы белым.
@@ -171,6 +155,38 @@ def update_screen():
 
     # Обновление экрана после каждого прохода цикла.
     pygame.display.flip()
+
+# Создание экрана и получение поверхности и квадрата окна.
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen_rect = screen.get_rect()
+
+# Создание кнопок Play, Quit.
+font = pygame.font.SysFont(None, 72)
+play_button_image = font.render("Play", True, (255, 255, 255), (0, 255, 0))
+play_button_rect = play_button_image.get_rect()
+play_button_rect.center = screen_rect.center
+
+quit_button_image = font.render("Quit", True, (255, 255, 255), (255, 0, 0))
+quit_button_rect = play_button_image.get_rect()
+quit_button_rect.x = play_button_rect.x
+quit_button_rect.y = play_button_rect.y + BUTTON_HEIGHT * 2
+
+ball = Ball(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+
+platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
+platform.midbottom = screen_rect.midbottom
+
+
+# Создание группы блоков, определение пространства для одного блока(по x, по y).
+blocks = pygame.sprite.Group()
+create_blocks()
+
+hit_sound = pygame.mixer.Sound('sounds/hit_block.wav')
+ball_bounce_sound = pygame.mixer.Sound('sounds/ball_bounce.wav')
+ball_fall_sound = pygame.mixer.Sound('sounds/ball_fall.wav')
+select_sound = pygame.mixer.Sound('sounds/select.wav')
+
+score_board = ScoreBoard()
 
 # Основной цикл игры.
 while True:

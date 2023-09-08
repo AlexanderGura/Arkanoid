@@ -40,8 +40,37 @@ class ScoreBoard():
             heart.image.fill((255, 0, 0))
             self.hearts.add(heart)
 
+    def lose_heart(self):
+        '''Функция вызывается, когда проиходит потеря жизни.'''
+        # Получаем последнее сердце с помощью метода .sprites()
+        # И удаляем его.
+        if self.hearts:
+            last_heart = self.hearts.sprites()[-1]
+            self.hearts.remove(last_heart)
+            return True
+        else:
+            return False
+
+    def update_score(self):
+        '''Функция вызывается, когда игрок получил очки.'''
+        self.score += BLOCK_POINTS
+        self.update_text()
+
+    def update_level(self):
+        '''Функция вызывается, когда игрок вышел на новый уровень.'''
+        self.level += 1
+        self.update_text()
+
+    def update_text(self):
+        '''Функция вызывается, когда происхоит изменение табло.'''
+        self.level_image = self.font.render(str(self.level), True, 
+            self.text_color, None)
+        self.score_image = self.font.render(str(self.score), True, 
+            self.text_color, None)
+
     def update(self, surface):
         '''Обновляет информацию на экране - уровень, счёт, жизни.'''
         surface.blit(self.level_image, self.level_image_rect)
         surface.blit(self.score_image, self.score_image_rect)
         self.hearts.draw(surface)
+
