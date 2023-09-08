@@ -2,6 +2,7 @@ import pygame, sys
 
 from header import *
 from block import *
+from ball import *
 
 pygame.init()
 
@@ -20,13 +21,7 @@ quit_button_rect = play_button_image.get_rect()
 quit_button_rect.x = play_button_rect.x
 quit_button_rect.y = play_button_rect.y + BUTTON_HEIGHT * 2
 
-# Создание объектов Rect для представления мяча и платформы.
-# Перемещения мяча в центр экрана, а платформы в середину нижней границы.
-ball = pygame.Rect(0, 0, BALL_SIZE, BALL_SIZE)
-ball.midtop = screen_rect.midtop
-ball.y += BALL_SIZE
-ball_float_x = float(ball.x)
-ball_float_y = float(ball.y)
+ball = Ball()
 
 platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
 platform.midbottom = screen_rect.midbottom
@@ -97,14 +92,14 @@ def ball_bounce():
     global ball_vertical, ball_horizontal
 
     # Обработка отскока от стен (столкновение == изменение направления полета).
-    if ball.y <= 0:
+    if ball.rect.y <= 0:
         ball_vertical = not ball_vertical
-    if ball.x <= 0:
+    if ball.rect.x <= 0:
         ball_horizontal = not ball_horizontal
-    if ball.right >= screen_rect.right:
+    if ball.rect.right >= screen_rect.right:
         ball_horizontal = not ball_horizontal
-    if ball.bottom >= screen_rect.bottom:
-        ball_float_x, ball_float_y = screen_rect.center
+    if ball.rect.bottom >= screen_rect.bottom:
+        ball.float_x, ball.float_y = screen_rect.center
 
 def ball_movement():
     global ball_vertical, ball_horizontal, ball_float_y, ball_float_x
@@ -113,30 +108,38 @@ def ball_movement():
     # После - координаты основного прямоугольника.
     # Движение наискос в правый нижний угол.
     if ball_vertical and ball_horizontal:
-        ball_float_y += BALL_SPEED
-        ball_float_x += BALL_SPEED
+        ball.float_y += BALL_SPEED
+        ball.float_x += BALL_SPEED
     # Движение наискос в правый верхний угол.
     elif not ball_vertical and ball_horizontal:
-        ball_float_y -= BALL_SPEED
-        ball_float_x += BALL_SPEED
+        ball.float_y -= BALL_SPEED
+        ball.float_x += BALL_SPEED
     # Движение наискос в левый нижний угол.
     elif ball_vertical and not ball_horizontal:
-        ball_float_y += BALL_SPEED
-        ball_float_x -= BALL_SPEED
+        ball.float_y += BALL_SPEED
+        ball.float_x -= BALL_SPEED
     # Движение наискос в левый верхний угол.
     else:
-        ball_float_y -= BALL_SPEED
-        ball_float_x -= BALL_SPEED
+        ball.float_y -= BALL_SPEED
+        ball.float_x -= BALL_SPEED
 
-    ball.y = ball_float_y
-    ball.x = ball_float_x
+    ball.rect.y = ball.float_y
+    ball.rect.x = ball.float_x
 
 def check_ball_platfrom_collide():
     global ball_vertical
 
     # Если мяч столкнулся с платформой или с верхней границев, 
     # То происходит смена движения мяча.
-    if ball.colliderect(platform):
+    if ball.rect.colliderect(platform):
+        ball_vertical = not ball_vertical
+
+def check_ball_blocks_collide():
+    global ball_vertical
+    # Проверка на коллизию между мячом и блоками.
+    # Функция возвращает список спрайтов, с которыми столкнулся мяч.
+    # Флаг True означает уничтожение блока, после соприкосновения.
+    if pygame.sprite.spritecollide(ball, blocks, True):
         ball_vertical = not ball_vertical
 
 def update_screen():
@@ -164,5 +167,6 @@ while True:
         ball_bounce()
         ball_movement()
         check_ball_platfrom_collide()
+        check_ball_blocks_collide()
 
     update_screen()
