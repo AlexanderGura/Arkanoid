@@ -3,6 +3,7 @@ import pygame, sys
 from header import *
 from block import *
 from ball import *
+from scoreboard import *
 
 pygame.init()
 
@@ -21,7 +22,7 @@ quit_button_rect = play_button_image.get_rect()
 quit_button_rect.x = play_button_rect.x
 quit_button_rect.y = play_button_rect.y + BUTTON_HEIGHT * 2
 
-ball = Ball()
+ball = Ball(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
 
 platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
 platform.midbottom = screen_rect.midbottom
@@ -36,6 +37,12 @@ space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
 available_block_x = (SCREEN_WIDTH - BALL_SIZE) // space_block_x
 available_block_y = (SCREEN_HEIGHT // 2) // space_block_y
 
+hit_sound = pygame.mixer.Sound('sounds/hit_block.wav')
+ball_bounce_sound = pygame.mixer.Sound('sounds/ball_bounce.wav')
+select_sound = pygame.mixer.Sound('sounds/select.wav')
+
+score_board = ScoreBoard()
+
 # Заполнение строки блоками.
 for block_row in range(available_block_y):
     for block_number in range(available_block_x):
@@ -44,7 +51,7 @@ for block_row in range(available_block_y):
         # Позиция блока - отступ (BALL_SIZE // 2) + 
         # + пространство для него умноженное на номер в строке.
         block.rect.x = BLOCK_INDENT + space_block_x * block_number
-        block.rect.y = BLOCK_INDENT + space_block_y * block_row
+        block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
         blocks.add(block)
 
 def check_event(event):
@@ -76,8 +83,10 @@ def check_event(event):
         # Если нажата кнопка Play, то запускается игра.
         if play_button_rect.collidepoint(pygame.mouse.get_pos()):
             game_active = True
+            select_sound.play()
         # Если нажата кнопка Quit, то выходим из игры.
         if quit_button_rect.collidepoint(pygame.mouse.get_pos()):
+            select_sound.play()
             pygame.quit()
             sys.exit()
 
@@ -94,12 +103,16 @@ def ball_bounce():
     # Обработка отскока от стен (столкновение == изменение направления полета).
     if ball.rect.y <= 0:
         ball_vertical = not ball_vertical
+        ball_bounce_sound.play()
     if ball.rect.x <= 0:
         ball_horizontal = not ball_horizontal
+        ball_bounce_sound.play()
     if ball.rect.right >= screen_rect.right:
         ball_horizontal = not ball_horizontal
+        ball_bounce_sound.play()
     if ball.rect.bottom >= screen_rect.bottom:
         ball.float_x, ball.float_y = screen_rect.center
+        ball_bounce_sound.play()
 
 def ball_movement():
     global ball_vertical, ball_horizontal, ball_float_y, ball_float_x
@@ -133,6 +146,7 @@ def check_ball_platfrom_collide():
     # То происходит смена движения мяча.
     if ball.rect.colliderect(platform):
         ball_vertical = not ball_vertical
+        ball_bounce_sound.play()
 
 def check_ball_blocks_collide():
     global ball_vertical
@@ -141,6 +155,7 @@ def check_ball_blocks_collide():
     # Флаг True означает уничтожение блока, после соприкосновения.
     if pygame.sprite.spritecollide(ball, blocks, True):
         ball_vertical = not ball_vertical
+        hit_sound.play()
 
 def update_screen():
     # Заливка экрана черным цветом, квадратов мяча и платформы белым.
@@ -149,6 +164,7 @@ def update_screen():
         screen.fill((255, 255, 255), ball)
         screen.fill((255, 255, 255), platform)
         blocks.draw(screen)
+        score_board.update(screen)
     else:
         screen.blit(play_button_image, play_button_rect)
         screen.blit(quit_button_image, quit_button_rect)        
