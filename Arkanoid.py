@@ -1,5 +1,7 @@
 import pygame, sys
+
 from header import *
+from block import *
 
 pygame.init()
 
@@ -28,6 +30,27 @@ ball_float_y = float(ball.y)
 
 platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
 platform.midbottom = screen_rect.midbottom
+
+
+# Создание группы блоков, определение пространства для одного блока(по x, по y).
+blocks = pygame.sprite.Group()
+space_block_x = BLOCK_WIDTH + BLOCK_INDENT
+space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
+
+# Подстчёт доступного количества блоков в строке и столбце.
+available_block_x = (SCREEN_WIDTH - BALL_SIZE) // space_block_x
+available_block_y = (SCREEN_HEIGHT // 2) // space_block_y
+
+# Заполнение строки блоками.
+for block_row in range(available_block_y):
+    for block_number in range(available_block_x):
+        block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
+
+        # Позиция блока - отступ (BALL_SIZE // 2) + 
+        # + пространство для него умноженное на номер в строке.
+        block.rect.x = BLOCK_INDENT + space_block_x * block_number
+        block.rect.y = BLOCK_INDENT + space_block_y * block_row
+        blocks.add(block)
 
 def check_event(event):
     global platform_moving_left, platform_moving_right, game_active
@@ -116,12 +139,13 @@ def check_ball_platfrom_collide():
     if ball.colliderect(platform):
         ball_vertical = not ball_vertical
 
-def draw_screen():
+def update_screen():
     # Заливка экрана черным цветом, квадратов мяча и платформы белым.
     screen.fill((0, 0, 0), screen_rect)
     if game_active:
         screen.fill((255, 255, 255), ball)
         screen.fill((255, 255, 255), platform)
+        blocks.draw(screen)
     else:
         screen.blit(play_button_image, play_button_rect)
         screen.blit(quit_button_image, quit_button_rect)        
@@ -141,4 +165,4 @@ while True:
         ball_movement()
         check_ball_platfrom_collide()
 
-    draw_screen()
+    update_screen()
