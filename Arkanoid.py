@@ -51,7 +51,7 @@ def create_blocks():
     # Подстчёт доступного количества блоков в строке и столбце.
     available_block_x = (SCREEN_WIDTH - BALL_SIZE) // space_block_x
     available_block_y = (SCREEN_HEIGHT // 2) // space_block_y
-
+    print(available_block_x, available_block_y)
     # Заполнение строки блоками.
     for block_row in range(available_block_y):
         for block_number in range(available_block_x):
@@ -59,7 +59,7 @@ def create_blocks():
 
             # Позиция блока - отступ (BALL_SIZE // 2) + 
             # + пространство для него умноженное на номер в строке.
-            block.rect.x = BLOCK_INDENT + space_block_x * block_number
+            block.rect.x = 40 + BLOCK_INDENT + space_block_x * block_number
             block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
             blocks.add(block)
 
@@ -157,7 +157,7 @@ def update_screen():
     pygame.display.flip()
 
 # Создание экрана и получение поверхности и квадрата окна.
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 screen_rect = screen.get_rect()
 
 # Создание кнопок Play, Quit.
@@ -175,7 +175,6 @@ ball = Ball(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
 
 platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
 platform.midbottom = screen_rect.midbottom
-
 
 # Создание группы блоков, определение пространства для одного блока(по x, по y).
 blocks = pygame.sprite.Group()

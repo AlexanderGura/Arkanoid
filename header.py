@@ -1,18 +1,24 @@
+import pygame
+
+pygame.init()
+
 # Константы.
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+screen_info = pygame.display.Info()
+
+SCREEN_WIDTH = screen_info.current_w
+SCREEN_HEIGHT = screen_info.current_h
 
 BUTTON_WIDTH = 200
 BUTTON_HEIGHT = 50
 
-BALL_SIZE = 100
-BALL_SPEED = 3.3
+BALL_SIZE = 50
+BALL_SPEED = 0.3
 
 PLATFORM_WIDTH = SCREEN_WIDTH
 PLATFORM_HEIGHT = 20
 PLATFORM_SPEED = 1
 
-BLOCK_WIDTH = 100
+BLOCK_WIDTH = 80
 BLOCK_HEIGHT = 20
 BLOCK_INDENT = BALL_SIZE // 2
 BLOCK_COLOR = (0, 0, 255)
