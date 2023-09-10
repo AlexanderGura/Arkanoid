@@ -43,7 +43,7 @@ def check_event(event):
             pygame.quit()
             sys.exit()
 
-def create_blocks():
+def create_blocks(level_scheme):
     '''Функция отвечает за построение сетки блоков.'''
     space_block_x = BLOCK_WIDTH + BLOCK_INDENT
     space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
@@ -55,13 +55,14 @@ def create_blocks():
     # Заполнение строки блоками.
     for block_row in range(available_block_y):
         for block_number in range(available_block_x):
-            block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
+            if level_scheme[block_row][block_number]:
+                block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
 
-            # Позиция блока - отступ (BALL_SIZE // 2) + 
-            # + пространство для него умноженное на номер в строке.
-            block.rect.x = 40 + BLOCK_INDENT + space_block_x * block_number
-            block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
-            blocks.add(block)
+                # Позиция блока - отступ (BALL_SIZE // 2) + 
+                # + пространство для него умноженное на номер в строке.
+                block.rect.x = 40 + BLOCK_INDENT + space_block_x * block_number
+                block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
+                blocks.add(block)
 
 def platform_movement():
     # Движения платформы (направо x увеличивается, налево - уменьшается).
@@ -138,7 +139,15 @@ def check_ball_blocks_collide():
 
 def start_new_level():
     '''Функция используется, когда игрок перешел на новый уровень.'''
-    create_blocks()
+    if score_board.level == 2:
+        create_blocks(LEVEL_2)
+    elif score_board.level == 3:
+        create_blocks(LEVEL_3)
+    elif score_board.level == 4:
+        create_blocks(LEVEL_4)
+    elif score_board.level == 5:
+        create_blocks(LEVEL_5)
+
     ball.center = screen_rect.center
 
 def update_screen():
@@ -178,7 +187,7 @@ platform.midbottom = screen_rect.midbottom
 
 # Создание группы блоков, определение пространства для одного блока(по x, по y).
 blocks = pygame.sprite.Group()
-create_blocks()
+create_blocks(LEVEL_1)
 
 hit_sound = pygame.mixer.Sound('sounds/hit_block.wav')
 ball_bounce_sound = pygame.mixer.Sound('sounds/ball_bounce.wav')
