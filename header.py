@@ -12,7 +12,7 @@ BUTTON_WIDTH = 200
 BUTTON_HEIGHT = 50
 
 BALL_SIZE = 50
-BALL_SPEED = 5.3
+BALL_SPEED = 0.3
 
 PLATFORM_WIDTH = SCREEN_WIDTH
 PLATFORM_HEIGHT = 20
@@ -21,8 +21,9 @@ PLATFORM_SPEED = 1
 BLOCK_WIDTH = 80
 BLOCK_HEIGHT = 20
 BLOCK_INDENT = BALL_SIZE // 2
-BLOCK_COLOR = (0, 0, 255)
 BLOCK_POINTS = 20
+BLOCK_COLOR = (0, 0, 255)
+STEEL_BLOCK_COLOR = (180, 180, 180)
 
 # Флаги состояния игры.
 ball_vertical = True      # True - движения вниз, False - движения вверх.
@@ -41,7 +42,7 @@ LEVEL_1 = [
 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
 ]
 
 LEVEL_2 = [

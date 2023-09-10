@@ -51,18 +51,28 @@ def create_blocks(level_scheme):
     # Подстчёт доступного количества блоков в строке и столбце.
     available_block_x = (SCREEN_WIDTH - BALL_SIZE) // space_block_x
     available_block_y = (SCREEN_HEIGHT // 2) // space_block_y
-    print(available_block_x, available_block_y)
     # Заполнение строки блоками.
     for block_row in range(available_block_y):
         for block_number in range(available_block_x):
-            if level_scheme[block_row][block_number]:
-                block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
+            type_block = level_scheme[block_row][block_number]
+            # Если тип блока равен 0, то это пустота.
+            if type_block != 0:
+                # Если тип блока равен 1, то это обычный блок.
+                if type_block == 1:
+                    block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
+                # Если тип блока равен 1, то это стальной блок.
+                elif type_block == -1:
+                    block = SteelBlock(STEEL_BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
 
                 # Позиция блока - отступ (BALL_SIZE // 2) + 
                 # + пространство для него умноженное на номер в строке.
                 block.rect.x = 40 + BLOCK_INDENT + space_block_x * block_number
                 block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
-                blocks.add(block)
+
+                if type_block == 1:
+                    blocks.add(block)
+                elif type_block == -1:
+                    steel_blocks.add(block)
 
 def platform_movement():
     # Движения платформы (направо x увеличивается, налево - уменьшается).
@@ -129,6 +139,10 @@ def check_ball_blocks_collide():
     # Функция возвращает список спрайтов, с которыми столкнулся мяч.
     # Флаг True означает уничтожение блока, после соприкосновения.
     if blocks:
+        if pygame.sprite.spritecollide(ball, steel_blocks, False):
+            ball_vertical = not ball_vertical
+            hit_sound.play()
+
         if pygame.sprite.spritecollide(ball, blocks, True):
             ball_vertical = not ball_vertical
             hit_sound.play()
@@ -157,6 +171,7 @@ def update_screen():
         screen.fill((255, 255, 255), ball)
         screen.fill((255, 255, 255), platform)
         blocks.draw(screen)
+        steel_blocks.draw(screen)
         score_board.update(screen)
     else:
         screen.blit(play_button_image, play_button_rect)
@@ -187,6 +202,7 @@ platform.midbottom = screen_rect.midbottom
 
 # Создание группы блоков, определение пространства для одного блока(по x, по y).
 blocks = pygame.sprite.Group()
+steel_blocks = pygame.sprite.Group()
 create_blocks(LEVEL_1)
 
 hit_sound = pygame.mixer.Sound('sounds/hit_block.wav')
