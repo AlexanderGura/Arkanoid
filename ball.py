@@ -1,4 +1,6 @@
 import pygame
+import random
+
 from header import *
 
 class Ball(pygame.sprite.Sprite):
@@ -14,3 +16,10 @@ class Ball(pygame.sprite.Sprite):
         self.image = pygame.Surface((BALL_SIZE, BALL_SIZE))
         self.float_x = float(self.rect.x)
         self.float_y = float(self.rect.y)
+
+        # Флаги движения мяча.
+        # True - движения вниз, False - движения вверх.
+        self.vertical = False
+        # True - движение вправо, False - движения влево.
+        self.horizontal = random.choice([True, False])
+        self.on_platform = True
