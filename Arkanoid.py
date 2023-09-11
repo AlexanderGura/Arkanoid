@@ -3,241 +3,160 @@ import pygame, sys
 from header import *
 from block import *
 from ball import *
+from platform import *
 from scoreboard import *
 
-pygame.init()
+class Arkanoid:
+    ''''''
 
-def check_event(event):
-    global platform_moving_left, platform_moving_right, game_active
+    def __init__(self):
+        '''Инициализирует атрибуты игры.'''
+        pygame.init()
 
-    # Закрытие окна по нажатию крестика в углу окна.
-    if event.type == pygame.QUIT:
-        pygame.quit()
-        sys.exit()
+        # Создание экрана и получение поверхности и квадрата окна.
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.screen_rect = self.screen.get_rect()
+        self.screen_width = self.screen_rect.width
+        self.screen_height = self.screen_rect.height
 
-    # Обработка нажатых клавиш клавиатуры.
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_RIGHT:
-            platform_moving_right = True
-        elif event.key == pygame.K_LEFT:
-            platform_moving_left = True
-        elif event.key == pygame.K_ESCAPE:
-            game_active = False
-        elif event.key == pygame.K_SPACE:
-            ball.on_platform = False
+        # Создание кнопок Play, Quit.
+        self.font = pygame.font.SysFont(None, 72)
+        self.play_button_image = self.font.render("Play", True, (255, 255, 255), (0, 255, 0))
+        self.play_button_rect = self.play_button_image.get_rect()
+        self.play_button_rect.center = self.screen_rect.center
 
-    # Обработка поднятых(после нажатия) клавиш клавиатуры.
-    if event.type == pygame.KEYUP:
-        if event.key == pygame.K_RIGHT:
-            platform_moving_right = False
-        elif event.key == pygame.K_LEFT:
-            platform_moving_left = False
+        self.quit_button_image = self.font.render("Quit", True, (255, 255, 255), (255, 0, 0))
+        self.quit_button_rect = self.play_button_image.get_rect()
+        self.quit_button_rect.x = self.play_button_rect.x
+        self.quit_button_rect.y = self.play_button_rect.y + BUTTON_HEIGHT * 2
 
-    # Обработка нажатия кнопки мыши.
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        # Если нажата кнопка Play, то запускается игра.
-        if play_button_rect.collidepoint(pygame.mouse.get_pos()):
-            game_active = True
-            select_sound.play()
-        # Если нажата кнопка Quit, то выходим из игры.
-        if quit_button_rect.collidepoint(pygame.mouse.get_pos()):
-            select_sound.play()
+        self.ball = Ball(self.screen, 0, 0)
+        self.platform = Platform(self)
+
+        # Создание группы блоков, определение пространства для одного блока(по x, по y).
+        self.blocks = pygame.sprite.Group()
+        self.steel_blocks = pygame.sprite.Group()
+        self.create_blocks(LEVEL_1)
+
+        self.select_sound = pygame.mixer.Sound('sounds/select.wav')
+        self.score_board = ScoreBoard(self)
+
+        # Флаги состояния игры.
+        self.game_active = False
+        
+
+    def check_event(self, event):
+        # Закрытие окна по нажатию крестика в углу окна.
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
 
-def create_blocks(level_scheme):
-    '''Функция отвечает за построение сетки блоков.'''
-    space_block_x = BLOCK_WIDTH + BLOCK_INDENT
-    space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
+        # Обработка нажатых клавиш клавиатуры.
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RIGHT:
+                self.platform.moving_right = True
+            elif event.key == pygame.K_LEFT:
+                self.platform.moving_left = True
+            elif event.key == pygame.K_ESCAPE:
+                self.game_active = False
+            elif event.key == pygame.K_SPACE:
+                self.ball.on_platform = False
 
-    # Подстчёт доступного количества блоков в строке и столбце.
-    available_block_x = (SCREEN_WIDTH - BALL_SIZE) // space_block_x
-    available_block_y = (SCREEN_HEIGHT // 2) // space_block_y
-    # Заполнение строки блоками.
-    for block_row in range(available_block_y):
-        for block_number in range(available_block_x):
-            type_block = level_scheme[block_row][block_number]
-            # Если тип блока равен 0, то это пустота.
-            if type_block != 0:
-                # Если тип блока равен 1, то это обычный блок.
-                if type_block == 1:
-                    block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
-                # Если тип блока равен 1, то это стальной блок.
-                elif type_block == -1:
-                    block = SteelBlock(STEEL_BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
+        # Обработка поднятых(после нажатия) клавиш клавиатуры.
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_RIGHT:
+                self.platform.moving_right = False
+            elif event.key == pygame.K_LEFT:
+                self.platform.moving_left = False
 
-                # Позиция блока - отступ (BALL_SIZE // 2) + 
-                # + пространство для него умноженное на номер в строке.
-                block.rect.x = 40 + BLOCK_INDENT + space_block_x * block_number
-                block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
+        # Обработка нажатия кнопки мыши.
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # Если нажата кнопка Play, то запускается игра.
+            if self.play_button_rect.collidepoint(pygame.mouse.get_pos()):
+                self.game_active = True
+                self.select_sound.play()
+            # Если нажата кнопка Quit, то выходим из игры.
+            if self.quit_button_rect.collidepoint(pygame.mouse.get_pos()):
+                self.select_sound.play()
+                pygame.quit()
+                sys.exit()
 
-                if type_block == 1:
-                    blocks.add(block)
-                elif type_block == -1:
-                    steel_blocks.add(block)
+    def create_blocks(self, level_scheme):
+        '''Функция отвечает за построение сетки блоков.'''
+        space_block_x = BLOCK_WIDTH + BLOCK_INDENT
+        space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
 
-def platform_movement():
-    # Движения платформы (направо x увеличивается, налево - уменьшается).
-    if ball.on_platform:
-        if platform_moving_right and platform.x < SCREEN_WIDTH - PLATFORM_WIDTH:
-            platform.x += PLATFORM_SPEED
-            ball.rect.x += PLATFORM_SPEED
-        if platform_moving_left and platform.x > 0:
-            platform.x -= PLATFORM_SPEED
-            ball.rect.x -= PLATFORM_SPEED
-    else:
-        if platform_moving_right and platform.x < SCREEN_WIDTH - PLATFORM_WIDTH:
-            platform.x += PLATFORM_SPEED
-        if platform_moving_left and platform.x > 0:
-            platform.x -= PLATFORM_SPEED
+        # Подстчёт доступного количества блоков в строке и столбце.
+        available_block_x = (self.screen_width - BALL_SIZE) // space_block_x
+        available_block_y = (self.screen_height // 2) // space_block_y
+        # Заполнение строки блоками.
+        for block_row in range(available_block_y):
+            for block_number in range(available_block_x):
+                type_block = level_scheme[block_row][block_number]
+                # Если тип блока равен 0, то это пустота.
+                if type_block != 0:
+                    # Если тип блока равен 1, то это обычный блок.
+                    if type_block == 1:
+                        block = Block(BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
+                    # Если тип блока равен 1, то это стальной блок.
+                    elif type_block == -1:
+                        block = SteelBlock(STEEL_BLOCK_COLOR, BLOCK_WIDTH, BLOCK_HEIGHT)
 
-def ball_bounce():
-    global game_active
+                    # Позиция блока - отступ (BALL_SIZE // 2) + 
+                    # + пространство для него умноженное на номер в строке.
+                    block.rect.x = 40 + BLOCK_INDENT + space_block_x * block_number
+                    block.rect.y = BLOCK_INDENT * 2 + space_block_y * block_row
 
-    # Обработка отскока от стен (столкновение == изменение направления полета).
-    if ball.rect.y <= 0:
-        ball.vertical = not ball.vertical
-        ball_bounce_sound.play()
-    elif ball.rect.x <= 0:
-        ball.horizontal = not ball.horizontal
-        ball_bounce_sound.play()
-    elif ball.rect.right >= screen_rect.right:
-        ball.horizontal = not ball.horizontal
-        ball_bounce_sound.play()
-    elif ball.rect.bottom >= screen_rect.bottom:
-        print('yes')
-        ball.float_x, ball.float_y = screen_rect.center
-        ball_fall_sound.play()
-        game_active = score_board.lose_heart()
+                    if type_block == 1:
+                        self.blocks.add(block)
+                    elif type_block == -1:
+                        self.steel_blocks.add(block)
 
-def ball_movement():
-    # Движения мяча - сначала изменяем дробные значения координат
-    # После - координаты основного прямоугольника.
-    # Движение наискос в правый нижний угол.
-    if not ball.on_platform:
-        if ball.vertical and ball.horizontal:
-            ball.float_y += BALL_SPEED
-            ball.float_x += BALL_SPEED
-        # Движение наискос в правый верхний угол.
-        elif not ball.vertical and ball.horizontal:
-            ball.float_y -= BALL_SPEED
-            ball.float_x += BALL_SPEED
-        # Движение наискос в левый нижний угол.
-        elif ball.vertical and not ball.horizontal:
-            ball.float_y += BALL_SPEED
-            ball.float_x -= BALL_SPEED
-        # Движение наискос в левый верхний угол.
+    def start_new_level(self):
+        '''Функция используется, когда игрок перешел на новый уровень.'''
+        if score_board.level == 2:
+            create_blocks(LEVEL_2)
+        elif score_board.level == 3:
+            create_blocks(LEVEL_3)
+        elif score_board.level == 4:
+            create_blocks(LEVEL_4)
+        elif score_board.level == 5:
+            create_blocks(LEVEL_5)
+
+        ball.center = screen_rect.center
+
+    def update_screen(self):
+        # Заливка экрана черным цветом, квадратов мяча и платформы белым.
+        self.screen.fill((0, 0, 0), self.screen_rect)
+        if self.game_active:
+            self.screen.fill((255, 255, 255), self.ball)
+            self.screen.fill((255, 255, 255), self.platform)
+            self.blocks.draw(self.screen)
+            self.steel_blocks.draw(self.screen)
+            self.score_board.update(self.screen)
         else:
-            ball.float_y -= BALL_SPEED
-            ball.float_x -= BALL_SPEED
+            self.screen.blit(self.play_button_image, self.play_button_rect)
+            self.screen.blit(self.quit_button_image, self.quit_button_rect)        
 
-        ball.rect.y = ball.float_y
-        ball.rect.x = ball.float_x
-    else:
-        ball_x, ball_y = platform.midtop
-        ball.x = ball_x - BALL_SIZE // 2
-        ball.y = ball_y - 60
+        # Обновление экрана после каждого прохода цикла.
+        pygame.display.flip()
 
-def check_ball_platfrom_collide():
+    def run_game(self):
+        # Основной цикл игры.
+        while True:
+            # Цикл для проверки событий клавиатуры, мыши, окна.
+            for event in pygame.event.get():
+                self.check_event(event)
 
-    # Если мяч столкнулся с платформой или с верхней границев, 
-    # То происходит смена движения мяча.
-    if not ball.on_platform and ball.rect.colliderect(platform):
-        print('yes')
-        ball.vertical = not ball.vertical
-        ball_bounce_sound.play()
+            if self.game_active:
+                self.platform.platform_movement()
+                if not self.ball.on_platform:
+                    self.ball.movement()
+                    self.ball.bounce()
+                    self.ball.check_platfrom_collide()
+                    self.ball.check_blocks_collide()
 
-def check_ball_blocks_collide():
-    # Проверка на коллизию между мячом и блоками, если они не закончились.
-    # Функция возвращает список спрайтов, с которыми столкнулся мяч.
-    # Флаг True означает уничтожение блока, после соприкосновения.
-    if blocks:
-        if pygame.sprite.spritecollide(ball, steel_blocks, False):
-            ball.vertical = not ball.vertical
-            hit_sound.play()
+            self.update_screen()
 
-        if pygame.sprite.spritecollide(ball, blocks, True):
-            ball.vertical = not ball.vertical
-            hit_sound.play()
-            score_board.update_score()
-    else:
-        score_board.update_level()
-        start_new_level()
-
-def start_new_level():
-    '''Функция используется, когда игрок перешел на новый уровень.'''
-    if score_board.level == 2:
-        create_blocks(LEVEL_2)
-    elif score_board.level == 3:
-        create_blocks(LEVEL_3)
-    elif score_board.level == 4:
-        create_blocks(LEVEL_4)
-    elif score_board.level == 5:
-        create_blocks(LEVEL_5)
-
-    ball.center = screen_rect.center
-
-def update_screen():
-    # Заливка экрана черным цветом, квадратов мяча и платформы белым.
-    screen.fill((0, 0, 0), screen_rect)
-    if game_active:
-        screen.fill((255, 255, 255), ball)
-        screen.fill((255, 255, 255), platform)
-        blocks.draw(screen)
-        steel_blocks.draw(screen)
-        score_board.update(screen)
-    else:
-        screen.blit(play_button_image, play_button_rect)
-        screen.blit(quit_button_image, quit_button_rect)        
-
-    # Обновление экрана после каждого прохода цикла.
-    pygame.display.flip()
-
-# Создание экрана и получение поверхности и квадрата окна.
-screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-screen_rect = screen.get_rect()
-
-# Создание кнопок Play, Quit.
-font = pygame.font.SysFont(None, 72)
-play_button_image = font.render("Play", True, (255, 255, 255), (0, 255, 0))
-play_button_rect = play_button_image.get_rect()
-play_button_rect.center = screen_rect.center
-
-quit_button_image = font.render("Quit", True, (255, 255, 255), (255, 0, 0))
-quit_button_rect = play_button_image.get_rect()
-quit_button_rect.x = play_button_rect.x
-quit_button_rect.y = play_button_rect.y + BUTTON_HEIGHT * 2
-
-platform = pygame.Rect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT)
-platform.midbottom = screen_rect.midbottom
-
-ball_x, ball_y = platform.midtop
-ball = Ball(ball_x - BALL_SIZE // 2, ball_y - 60)
-
-# Создание группы блоков, определение пространства для одного блока(по x, по y).
-blocks = pygame.sprite.Group()
-steel_blocks = pygame.sprite.Group()
-create_blocks(LEVEL_1)
-
-hit_sound = pygame.mixer.Sound('sounds/hit_block.wav')
-ball_bounce_sound = pygame.mixer.Sound('sounds/ball_bounce.wav')
-ball_fall_sound = pygame.mixer.Sound('sounds/ball_fall.wav')
-select_sound = pygame.mixer.Sound('sounds/select.wav')
-
-score_board = ScoreBoard()
-
-# Основной цикл игры.
-while True:
-    # Цикл для проверки событий клавиатуры, мыши, окна.
-    for event in pygame.event.get():
-        check_event(event)
-
-    if game_active:
-        platform_movement()
-        if not ball.on_platform:
-            ball_movement()
-            ball_bounce()
-            check_ball_platfrom_collide()
-            check_ball_blocks_collide()
-
-    update_screen()
+arkanoid = Arkanoid()
+arkanoid.run_game()
