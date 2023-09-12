@@ -1,5 +1,4 @@
 import pygame
-from header import *
 from ball import *
 
 class ScoreBoard():
@@ -15,6 +14,11 @@ class ScoreBoard():
         self.text_color = (255, 255, 255)
         self.level = 1
         self.score = 0
+        self.block_points = 50
+
+        # Флаги состояния игры.
+        self.game_active = False
+        self.free_throw = True
 
         self.prep_text()
         # self.prep_hearts()
@@ -57,7 +61,7 @@ class ScoreBoard():
 
     def update_score(self):
         '''Функция вызывается, когда игрок получил очки.'''
-        self.score += BLOCK_POINTS
+        self.score += self.block_points
         self.update_text()
 
     def update_level(self):

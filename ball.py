@@ -1,25 +1,26 @@
 import pygame
 import random
 
-from header import *
-
 class Ball(pygame.sprite.Sprite):
     '''Класс, представляющий мяч.'''
 
-    def __init__(self, screen, x, y):
+    def __init__(self, game):
         super().__init__()
+        self.screen = game.screen
+        self.screen_rect = game.screen_rect
+        self.screen_width, self.screen_height = game.screen_rect.size
+        self.platform = game.platform
+
         # Создание объектов Rect для представления мяча и платформы.
         # Перемещения мяча в центр экрана, а платформы в середину нижней границы.
-        self.SIZE = 50
-        self.SPEED = 0.1
+        self.size = 50
+        self.speed = 5.5
 
-        self.rect = pygame.Rect(x, y, self.SIZE, self.SIZE)
-        self.image = pygame.Surface((self.SIZE, self.SIZE))
+        self.rect = pygame.Rect(0, 0, self.size, self.size)
+        self.ball_to_platform()
+        self.image = pygame.Surface((self.size, self.size))
         self.float_x = float(self.rect.x)
         self.float_y = float(self.rect.y)
-
-        self.screen = screen
-        self.screen_rect = screen.get_rect()
 
         # Флаги движения мяча.
         # True - движения вниз, False - движения вверх.
@@ -32,6 +33,11 @@ class Ball(pygame.sprite.Sprite):
         self.bounce_sound = pygame.mixer.Sound('sounds/ball_bounce.wav')
         self.fall_sound = pygame.mixer.Sound('sounds/ball_fall.wav')
 
+    def ball_to_platform(self):
+        '''Возвращает мяч к платформе.'''
+        self.rect.midbottom = self.platform.rect.midtop
+        self.rect.y -= 50
+        self.float_x, self.float_y = self.rect.x, self.rect.y
 
     def bounce(self):
         # Обработка отскока от стен (столкновение == изменение направления полета).
@@ -47,7 +53,7 @@ class Ball(pygame.sprite.Sprite):
         elif self.rect.bottom >= self.screen_rect.bottom:
             self.float_x, self.float_y = self.screen_rect.center
             self.fall_sound.play()
-            game_active = score_board.lose_heart()
+            # game_active = score_board.lose_heart()
 
     def movement(self):
         # Движения мяча - сначала изменяем дробные значения координат
@@ -55,50 +61,22 @@ class Ball(pygame.sprite.Sprite):
         # Движение наискос в правый нижний угол.
         if not self.on_platform:
             if self.vertical and self.horizontal:
-                self.float_y += self.SPEED
-                self.float_x += self.SPEED
+                self.float_y += self.speed
+                self.float_x += self.speed
             # Движение наискос в правый верхний угол.
             elif not self.vertical and self.horizontal:
-                self.float_y -= self.SPEED
-                self.float_x += self.SPEED
+                self.float_y -= self.speed
+                self.float_x += self.speed
             # Движение наискос в левый нижний угол.
             elif self.vertical and not self.horizontal:
-                self.float_y += self.SPEED
-                self.float_x -= self.SPEED
+                self.float_y += self.speed
+                self.float_x -= self.speed
             # Движение наискос в левый верхний угол.
             else:
-                self.float_y -= self.SPEED
-                self.float_x -= self.SPEED
+                self.float_y -= self.speed
+                self.float_x -= self.speed
 
             self.rect.y = self.float_y
             self.rect.x = self.float_x
         else:
-            self.x, self.y = platform.midtop
-            self.x = self.x - self.SIZE // 2
-            self.y = self.y - 60
-
-    def check_platfrom_collide(self):
-
-        # Если мяч столкнулся с платформой или с верхней границев, 
-        # То происходит смена движения мяча.
-        if not self.on_platform and self.rect.colliderect(platform):
-            print('yes')
-            self.vertical = not self.vertical
-            self.bounce_sound.play()
-
-    def check_blocks_collide(self):
-        # Проверка на коллизию между мячом и блоками, если они не закончились.
-        # Функция возвращает список спрайтов, с которыми столкнулся мяч.
-        # Флаг True означает уничтожение блока, после соприкосновения.
-        if blocks:
-            if pygame.sprite.spritecollide(self, steel_blocks, False):
-                self.vertical = not self.vertical
-                self.hit_sound.play()
-
-            if pygame.sprite.spritecollide(self, blocks, True):
-                self.vertical = not self.vertical
-                self.hit_sound.play()
-                score_board.update_score()
-        else:
-            score_board.update_level()
-            start_new_level()
+            self.ball_to_platform()
