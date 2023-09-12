@@ -7,7 +7,7 @@ from platform import *
 from scoreboard import *
 
 class Arkanoid:
-    ''''''
+    '''Основной класс игры, отвечает за взаимодействие всех элементов игры.'''
 
     def __init__(self):
         '''Инициализирует атрибуты игры.'''
@@ -30,20 +30,35 @@ class Arkanoid:
         self.quit_button_rect.x = self.play_button_rect.x
         self.quit_button_rect.y = self.play_button_rect.y + BUTTON_HEIGHT * 2
 
+        self.select_sound = pygame.mixer.Sound('sounds/select.wav')
+        self.score_board = ScoreBoard(self)
+
         self.ball = Ball(self.screen, 0, 0)
         self.platform = Platform(self)
 
         # Создание группы блоков, определение пространства для одного блока(по x, по y).
         self.blocks = pygame.sprite.Group()
         self.steel_blocks = pygame.sprite.Group()
-        self.create_blocks(LEVEL_1)
-
-        self.select_sound = pygame.mixer.Sound('sounds/select.wav')
-        self.score_board = ScoreBoard(self)
+        self._read_level_schemes()
+        self.create_blocks()
 
         # Флаги состояния игры.
         self.game_active = False
-        
+
+    def _read_level_schemes(self):
+        '''Функция считывает схемы уровней из файлов в словарь.'''
+        # Файл - матрица: 1 - блок, 0 - пустота, -1 - стальной блок.
+        self.schemes = {}
+        for number in range(1, 6):
+            # Открываем файл, подставляем номер уровня.
+            file = open(f'level_schemes/level_{number}.txt')
+            scheme = []
+
+            # Проходимся по всем строкам файла и добавляем в список.
+            for line in file:
+                scheme.append(list(map(int, line.split())))
+            # Ключ словаря - номер уровня, значение словаря - схема.
+            self.schemes[number] = scheme
 
     def check_event(self, event):
         # Закрытие окна по нажатию крестика в углу окна.
@@ -53,36 +68,50 @@ class Arkanoid:
 
         # Обработка нажатых клавиш клавиатуры.
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT:
-                self.platform.moving_right = True
-            elif event.key == pygame.K_LEFT:
-                self.platform.moving_left = True
-            elif event.key == pygame.K_ESCAPE:
-                self.game_active = False
-            elif event.key == pygame.K_SPACE:
-                self.ball.on_platform = False
+            self._check_keydown_event(event.key)
 
         # Обработка поднятых(после нажатия) клавиш клавиатуры.
         if event.type == pygame.KEYUP:
-            if event.key == pygame.K_RIGHT:
-                self.platform.moving_right = False
-            elif event.key == pygame.K_LEFT:
-                self.platform.moving_left = False
+            self._check_keyup_event(event.key)
 
         # Обработка нажатия кнопки мыши.
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # Если нажата кнопка Play, то запускается игра.
-            if self.play_button_rect.collidepoint(pygame.mouse.get_pos()):
-                self.game_active = True
-                self.select_sound.play()
-            # Если нажата кнопка Quit, то выходим из игры.
-            if self.quit_button_rect.collidepoint(pygame.mouse.get_pos()):
-                self.select_sound.play()
-                pygame.quit()
-                sys.exit()
+            self._check_mouse_event(pygame.mouse.get_pos())
+            
+    def _check_keydown_event(self, key):
+        '''Функция обрабатывает нажатие клавиш.'''
+        if key == pygame.K_RIGHT:
+            self.platform.moving_right = True
+        elif key == pygame.K_LEFT:
+            self.platform.moving_left = True
+        elif key == pygame.K_ESCAPE:
+            self.game_active = False
+        elif key == pygame.K_SPACE:
+            self.ball.on_platform = False
 
-    def create_blocks(self, level_scheme):
+    def _check_keyup_event(self, key):
+        '''Функция обрабатывает поднятие(после нажатия) клавиш клавиатуры.'''
+        if key == pygame.K_RIGHT:
+            self.platform.moving_right = False
+        elif key == pygame.K_LEFT:
+            self.platform.moving_left = False
+
+    def _check_mouse_event(self, mouse_pos):
+        '''Функция обрабатывает нажатия кнопки мыши.'''
+        # Если нажата кнопка Play, то запускается игра.
+        if self.play_button_rect.collidepoint(mouse_pos):
+            self.game_active = True
+            self.select_sound.play()
+
+        # Если нажата кнопка Quit, то выходим из игры.
+        if self.quit_button_rect.collidepoint(mouse_pos):
+            self.select_sound.play()
+            pygame.quit()
+            sys.exit()
+
+    def create_blocks(self):
         '''Функция отвечает за построение сетки блоков.'''
+        level_scheme = self.schemes[self.score_board.level]
         space_block_x = BLOCK_WIDTH + BLOCK_INDENT
         space_block_y = BLOCK_HEIGHT + BLOCK_INDENT
 

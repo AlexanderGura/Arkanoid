@@ -45,7 +45,6 @@ class Ball(pygame.sprite.Sprite):
             self.horizontal = not self.horizontal
             self.bounce_sound.play()
         elif self.rect.bottom >= self.screen_rect.bottom:
-            print('yes')
             self.float_x, self.float_y = self.screen_rect.center
             self.fall_sound.play()
             game_active = score_board.lose_heart()
