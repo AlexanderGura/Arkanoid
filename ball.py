@@ -9,12 +9,13 @@ class Ball(pygame.sprite.Sprite):
         self.screen = game.screen
         self.screen_rect = game.screen_rect
         self.screen_width, self.screen_height = game.screen_rect.size
+        self.score_board = game.score_board
         self.platform = game.platform
 
         # Создание объектов Rect для представления мяча и платформы.
         # Перемещения мяча в центр экрана, а платформы в середину нижней границы.
         self.size = 50
-        self.speed = 5.5
+        self.speed = 0.5
 
         self.rect = pygame.Rect(0, 0, self.size, self.size)
         self.ball_to_platform()
@@ -35,6 +36,8 @@ class Ball(pygame.sprite.Sprite):
 
     def ball_to_platform(self):
         '''Возвращает мяч к платформе.'''
+        self.on_platform = True
+        self.vertical = False
         self.rect.midbottom = self.platform.rect.midtop
         self.rect.y -= 50
         self.float_x, self.float_y = self.rect.x, self.rect.y
@@ -53,7 +56,8 @@ class Ball(pygame.sprite.Sprite):
         elif self.rect.bottom >= self.screen_rect.bottom:
             self.float_x, self.float_y = self.screen_rect.center
             self.fall_sound.play()
-            # game_active = score_board.lose_heart()
+            self.score_board.lose_heart()
+            self.ball_to_platform()
 
     def movement(self):
         # Движения мяча - сначала изменяем дробные значения координат

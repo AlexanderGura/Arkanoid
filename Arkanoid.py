@@ -4,6 +4,7 @@ from block import *
 from ball import *
 from platform import *
 from scoreboard import *
+from menu import *
 
 class Arkanoid:
     '''Основной класс игры, отвечает за взаимодействие всех элементов игры.'''
@@ -20,6 +21,7 @@ class Arkanoid:
 
         self.select_sound = pygame.mixer.Sound('sounds/select.wav')
         self.score_board = ScoreBoard(self)
+        self.menu = Menu(self)
 
         self.platform = Platform(self)
         self.ball = Ball(self)
@@ -29,7 +31,6 @@ class Arkanoid:
         self.steel_blocks = pygame.sprite.Group()
         self._read_level_schemes()
         
-        self.create_buttons()
         self.create_blocks()
 
     def _read_level_schemes(self):
@@ -46,22 +47,6 @@ class Arkanoid:
                 scheme.append(list(map(int, line.split())))
             # Ключ словаря - номер уровня, значение словаря - схема.
             self.schemes[number] = scheme
-
-    def create_buttons(self):
-        '''Функция отвечает за создание кнопок в главном меню.'''
-        self.button_width = 200
-        self.button_height = 50
-
-        # Создание кнопок Play, Quit.
-        self.font = pygame.font.SysFont(None, 72)
-        self.play_button_image = self.font.render("Play", True, (255, 255, 255), None)
-        self.play_button_rect = self.play_button_image.get_rect()
-        self.play_button_rect.center = self.screen_rect.center
-
-        self.quit_button_image = self.font.render("Quit", True, (255, 255, 255), None)
-        self.quit_button_rect = self.play_button_image.get_rect()
-        self.quit_button_rect.x = self.play_button_rect.x
-        self.quit_button_rect.y = self.play_button_rect.y + self.button_height * 2
 
     def check_event(self, event):
         # Закрытие окна по нажатию крестика в углу окна.
@@ -102,12 +87,12 @@ class Arkanoid:
     def _check_mouse_event(self, mouse_pos):
         '''Функция обрабатывает нажатия кнопки мыши.'''
         # Если нажата кнопка Play, то запускается игра.
-        if self.play_button_rect.collidepoint(mouse_pos):
+        if self.menu.play_button.rect.collidepoint(mouse_pos):
             self.score_board.game_active = True
             self.select_sound.play()
 
         # Если нажата кнопка Quit, то выходим из игры.
-        if self.quit_button_rect.collidepoint(mouse_pos):
+        if self.menu.quit_button.rect.collidepoint(mouse_pos):
             self.select_sound.play()
             pygame.quit()
             sys.exit()
@@ -164,9 +149,9 @@ class Arkanoid:
             if pygame.sprite.spritecollide(self.ball, self.blocks, True):
                 self.ball.vertical = not self.ball.vertical
                 self.ball.hit_sound.play()
-                self.score_board.update_score()
+                self.score_board.score += self.score_board.block_points
         else:
-            self.score_board.update_level()
+            self.score_board.level += 1
             self.start_new_level()
 
     def start_new_level(self):
@@ -182,10 +167,9 @@ class Arkanoid:
             self.screen.fill((255, 255, 255), self.platform)
             self.blocks.draw(self.screen)
             self.steel_blocks.draw(self.screen)
-            self.score_board.update(self.screen)
+            self.score_board.draw()
         else:
-            self.screen.blit(self.play_button_image, self.play_button_rect)
-            self.screen.blit(self.quit_button_image, self.quit_button_rect)        
+            self.menu.draw()
 
         # Обновление экрана после каждого прохода цикла.
         pygame.display.flip()
@@ -203,6 +187,8 @@ class Arkanoid:
                 self.ball.bounce()
                 self.check_platfrom_collide()
                 self.check_blocks_collide()
+                self.score_board.update()
+
 
             self.update_screen()
 

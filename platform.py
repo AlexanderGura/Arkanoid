@@ -9,7 +9,7 @@ class Platform:
         self.screen_width, self.screen_height = game.screen_rect.size
         self.score_board = game.score_board
 
-        self.width = 2000
+        self.width = 200
         self.height = 20
         self.speed = 1
 
