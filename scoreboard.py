@@ -27,6 +27,7 @@ class ScoreBoard():
 
         # Флаги состояния игры.
         self.game_active = False
+        self.level_menu_active = False
         self.free_throw = True
 
         self.prep_text()

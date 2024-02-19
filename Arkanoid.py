@@ -88,14 +88,24 @@ class Arkanoid:
         '''Функция обрабатывает нажатия кнопки мыши.'''
         # Если нажата кнопка Play, то запускается игра.
         if self.menu.play_button.rect.collidepoint(mouse_pos):
-            self.score_board.game_active = True
             self.select_sound.play()
+            self.score_board.game_active = True
 
         # Если нажата кнопка Quit, то выходим из игры.
         if self.menu.quit_button.rect.collidepoint(mouse_pos):
             self.select_sound.play()
             pygame.quit()
             sys.exit()
+
+        # Если нажата кнопка Next, то запускаем следующий уровень.
+        if self.menu.next_button.rect.collidepoint(mouse_pos):
+            self.select_sound.play()
+            self.start_new_level()
+
+        # Если нажата кнопка Restart, то перезапускаем уровень.
+        if self.menu.restart_button.rect.collidepoint(mouse_pos):
+            self.select_sound.play()
+            self.restart_level()
 
     def create_blocks(self):
         '''Функция отвечает за построение сетки блоков.'''
@@ -151,13 +161,24 @@ class Arkanoid:
                 self.ball.hit_sound.play()
                 self.score_board.score += self.score_board.block_points
         else:
-            self.score_board.level += 1
-            self.start_new_level()
+            # Когда закончились блоки - игра перестает быть активной
+            # Выставляем флаг меню уровня.
+            self.score_board.level_menu_active = True
+            self.score_board.game_active = False
+
+    def restart_level(self):
+        self.create_blocks()
+        self.ball.on_platform = True
+        self.menu.level_menu_active = False
+        self.score_board.game_active = True
 
     def start_new_level(self):
         '''Функция используется, когда игрок перешел на новый уровень.'''
+        self.score_board.level += 1
         self.create_blocks()
         self.ball.on_platform = True
+        self.menu.level_menu_active = False
+        self.score_board.game_active = True
 
     def update_screen(self):
         # Заливка экрана черным цветом, квадратов мяча и платформы белым.
@@ -168,9 +189,17 @@ class Arkanoid:
             self.blocks.draw(self.screen)
             self.steel_blocks.draw(self.screen)
             self.score_board.draw()
-        else:
-            self.menu.draw()
-
+        # Если активно меню после уровня, то рисуем его, а главное прячем.
+        elif self.score_board.level_menu_active:
+            self.menu.hide_main_menu()
+            self.menu.seek_level_menu()
+            self.menu.draw_level_menu()
+        # Если игра неактивна и неактивно меню уровня, то выводим главное меню.
+        elif not self.score_board.game_active and not self.score_board.level_menu_active:
+            self.menu.hide_level_menu()
+            self.menu.seek_main_menu()
+            self.menu.draw_main_menu()
+        
         # Обновление экрана после каждого прохода цикла.
         pygame.display.flip()
 
@@ -188,7 +217,6 @@ class Arkanoid:
                 self.check_platfrom_collide()
                 self.check_blocks_collide()
                 self.score_board.update()
-
 
             self.update_screen()
 
